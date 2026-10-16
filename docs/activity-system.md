@@ -1,0 +1,9 @@
+# Activity system
+
+`ActivityCollector` defines start, stop and status. `WindowsActivityCollector` starts one hidden PowerShell process, then receives newline-delimited validated JSON. The helper samples every 15 seconds using GetForegroundWindow, GetWindowText, GetWindowThreadProcessId, GetLastInputInfo and monitor/window rectangles. Idle begins after 120 seconds. It reads no document content and installs no hooks for keyboard input.
+
+The collector is owned by the backend. Each small batch is normalized into UUID + UTC timestamp + application/title + duration + idle/fullscreen metadata. A missed poll is bounded to prevent crediting time spent asleep. Duplicate event IDs are ignored. Late events remain observations but do not rewind sessions. Sessions split on application/title/source/idle changes or gaps over 45 seconds. The first observation credits no duration; subsequent matching samples credit at most 30 seconds each. Closing an application is detected indirectly through a foreground change.
+
+The current snapshot reads the latest indexed event and five minutes of sessions; no model is called. Context goes stale after 60 seconds or when tracking is disabled. It includes active app/title, session duration, recent apps, fullscreen, switching frequency and recent idle return. Unknown/inaccessible Windows desktops do not establish a useful project match. Run the collector in the interactive session rather than as a Windows service.
+
+Timeline filters accept application, UTC range and event/session kind; results are bounded to 500 rows. Daily duration is apportioned for sessions that cross midnight. Foreground duration is approximate metadata, never proof of useful work. All polling is local, opt-in and visibly indicated. Retention runs once per minute; conversations have separate manual deletion.
